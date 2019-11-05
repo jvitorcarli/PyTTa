@@ -183,7 +183,7 @@ class MeasurementSetup(object):
         self.freqMin = freqMin
         self.freqMax = freqMax
         self.inChannels = inChannels
-        self.outChannels = outChannels
+        self.outChannels = outChannels  # TODO: property change
         self.path = getcwd()+'/'+self.name+'/'
         self.modified = False
         self.initing = False
@@ -365,7 +365,7 @@ class MeasurementSetup(object):
         return self._outChannels
 
     @outChannels.setter
-    def outChannels(self, newInput):
+    def outChannels(self, newInput):  # TODO: semelhante ao inChannels
         if not self.initing:
             raise PermissionError('After a measurement initialization its ' +
                                   'outChannels can\'t be changed.')
@@ -374,9 +374,12 @@ class MeasurementSetup(object):
         elif isinstance(newInput, dict):
             self._outChannels = MeasurementChList(kind='out')
             for chCode, chContents in newInput.items():
-                self._outChannels.append(ChannelObj(num=chContents[0],
-                                                    name=chContents[1],
-                                                    code=chCode))
+                if chCode == 'groups':
+                    self._outChannels.groups = chContents
+                else:
+                    self._outChannels.append(ChannelObj(num=chContents[0],
+                                                        name=chContents[1],
+                                                        code=chCode))
 
     @property
     def path(self):
@@ -897,10 +900,27 @@ class TakeMeasure(object):
                                              '\' , can\'t be enabled ' +
                                              'individually as it\'s in ' +
                                              group + '\'s group.')
+            # Look for grouped channels through the individual channels
+            for code in self.outChSel:
+                if code not in self.MS.outChannels.groups:
+                    chNum = self.MS.outChannels[code].num
+                    if self.MS.outChannels.is_grouped(code):
+                        group = self.MS.outChannels.get_group_name(chNum)
+                        raise ValueError('Output channel number' +
+                                         str(chNum) + ', code \'' + code +
+                                         '\' , can\'t be enabled ' +
+                                         'individually as it\'s in ' +
+                                         group + '\'s group.')
         # Look for groups activated when ms kind is a calibration
         elif self.kind in ['sourcerecalibration', 'miccalibration']:
+            # Input channels
             for code in self.inChSel:
                 if code in self.MS.inChannels.groups:
+                    raise ValueError('Groups can\'t be calibrated. Channels ' +
+                                     'must be calibrated individually.')
+            # Output channels
+            for code in self.outChSel:
+                if code in self.MS.outChannels.groups:
                     raise ValueError('Groups can\'t be calibrated. Channels ' +
                                      'must be calibrated individually.')
         # Constructing the inChannels list for the current take
@@ -914,10 +934,22 @@ class TakeMeasure(object):
         # Getting groups information for reconstructd
         # inChannels MeasurementChList
         self.inChannels.copy_groups(self.MS.inChannels)
-        # Setting the outChannel for the current take
+        # Building outChannel list for the current take
         self.outChannel = MeasurementChList(kind='out')
-        if self.kind in ['roomres', 'sourcerecalibration']:
-            self.outChannel.append(self.MS.outChannels[self.outChSel])
+        for code in self.outChSel:
+            if code in self.MS.outChannels.groups:
+                for chNum in self.MS.outChannels.groups[code]:
+                    self.outChannel.append(self.MS.outChannels[chNum])
+            else:
+                self.outChannel.append(self.MS.outChannels[code])
+        # Getting groups
+        self.outChannel.copy_groups(self.MS.outChannels)
+        self.__check_excitation_channels()
+
+    def __check_excitation_channels(self):
+        nc = self.MS.excitationSignals[self.excitation].numChannels
+        if nc != 1 and len(self.outChannel) != nc:
+            raise ValueError("Number of channels of excitation and output channels list does not match.")
 
     def __cfg_measurement_object(self):
         # For roomres measurement kind
@@ -1125,14 +1157,19 @@ class TakeMeasure(object):
         if newChSelection is None and self.kind in ['miccalibration',
                                                     'sourcerecalibration',
                                                     'noisefloor']:
-            pass
-        elif not isinstance(newChSelection, str):
-            raise TypeError('outChSel must be a string with a valid ' +
-                            'output channel code listed in '+self.MS.name +
-                            '\'s outChannels.')
-        elif newChSelection not in self.MS.outChannels:
-            raise TypeError('Invalid outChSel code or name. It must be a ' +
-                            'valid ' + self.MS.name + '\'s output channel.')
+            return
+        elif not isinstance(newChSelection, list):
+            raise TypeError('outChSel must be a list with codes of ' +
+                            'individual channels and/or groups.')
+        for item in newChSelection:
+            if not isinstance(item, str):
+                raise TypeError('outChSel must be a string with a valid ' +
+                                'output channel code listed in '+self.MS.name +
+                                '\'s outChannels.')
+            elif item not in self.MS.outChannels.groups \
+                 and item not in self.MS.outChannels:
+                raise TypeError('Invalid outChSel code or name. It must be a ' +
+                                'valid ' + self.MS.name + '\'s output channel.')
         self._outChSel = newChSelection
 
     @property
@@ -1256,17 +1293,19 @@ class MeasuredThing(object):
                 f'outputAmplification={self.outputAmplification!r})')
 
     def __str__(self):
-        str = self.kind + '_'  # Kind info
+        out = self.kind + '_'  # Kind info
         if self.kind in ['roomres', 'roomir']:
-            str += self.sourcePos + '-'  # Source position info
+            out += self.sourcePos + '-'  # Source position info
         if self.kind in ['roomres', 'roomir', 'noisefloor']:
-            str += self.receiverPos + '_'  # Receiver position info
+            out += self.receiverPos + '_'  # Receiver position info
         if self.kind in ['roomres', 'roomir', 'sourcerecalibration', 'recalibir']:
-            str += self.outChannel._channels[0].code + '-'  # outCh code info
-        str += self.arrayName  # input Channel/group code info
+            out += list(self.outChannel.groups.keys())[0] + '-' \
+                if len(self.outChannel.groups.keys()) > 0 \
+                else self.outChannel._channels[0].code + '-'  # outCh code info
+        out += self.arrayName  # input Channel/group code info
         if self.kind in ['roomres', 'roomir']:
-            str += '_' + self.excitation  # Excitation signal code info
-        return str
+            out += '_' + self.excitation  # Excitation signal code info
+        return out
 
     # Methods
 
