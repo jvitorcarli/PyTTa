@@ -119,8 +119,8 @@ def merge(signal1, *signalObjects):
     as a column of the new object
     """
     j = 1
-    freqMin = cp.deepcopy(signal1.freqMin)
-    freqMax = cp.deepcopy(signal1.freqMax)
+    minFreq = cp.deepcopy(signal1.minFreq)
+    maxFreq = cp.deepcopy(signal1.maxFreq)
     comment = cp.deepcopy(signal1.comment)
     channels = cp.deepcopy(signal1.channels)
     timeSignal = cp.deepcopy(signal1.timeSignal)
@@ -142,7 +142,7 @@ def merge(signal1, *signalObjects):
         j += 1
     newSignal = SignalObj(timeSignal, domain='time',
                           samplingRate=signal1.samplingRate,
-                          freqMin=freqMin, freqMax=freqMax, comment=comment)
+                          minFreq=minFreq, maxFreq=maxFreq, comment=comment)
     channels.conform_to()
     newSignal.channels = channels
     return newSignal
@@ -308,8 +308,8 @@ def __parse_load(className):
         openMat = sio.loadmat(openJson['timeSignalAddress'])
         out = SignalObj(openMat['timeSignal'], domain=openJson['lengthDomain'],
                         samplingRate=openJson['samplingRate'],
-                        freqMin=openJson['freqLims'][0],
-                        freqMax=openJson['freqLims'][1],
+                        minFreq=openJson['freqLims'][0],
+                        maxFreq=openJson['freqLims'][1],
                         comment=openJson['comment'])
         out.channels = __parse_channels(openJson['channels'],
                                         out.channels)
@@ -384,7 +384,7 @@ def h5_save(fileName: str, *PyTTaObjs):
         objsNameCount = {}
         objCount = 0  # Counter for loaded objects
         totCount = 0  # Counter for total groups
-    
+
         for idx, pobj in enumerate(PyTTaObjs):
             totCount += 1
             if isinstance(pobj, (SignalObj,
@@ -452,8 +452,8 @@ def __h5_unpack(ObjGroup):
     if ObjGroup.attrs['class'] == 'SignalObj':
         # PyTTaObj attrs unpacking
         samplingRate = ObjGroup.attrs['samplingRate']
-        freqMin = _h5.none_parser(ObjGroup.attrs['freqMin'])
-        freqMax = _h5.none_parser(ObjGroup.attrs['freqMax'])
+        minFreq = _h5.none_parser(ObjGroup.attrs['minFreq'])
+        maxFreq = _h5.none_parser(ObjGroup.attrs['maxFreq'])
         lengthDomain = ObjGroup.attrs['lengthDomain']
         comment = ObjGroup.attrs['comment']
         # SignalObj attr unpacking
@@ -462,8 +462,8 @@ def __h5_unpack(ObjGroup):
         SigObj = SignalObj(signalArray=np.array(ObjGroup['timeSignal']),
                            domain='time',
                            samplingRate=samplingRate,
-                           freqMin=freqMin,
-                           freqMax=freqMax,
+                           minFreq=minFreq,
+                           maxFreq=maxFreq,
                            comment=comment)
         SigObj.channels = channels
         SigObj.lengthDomain = lengthDomain
@@ -485,8 +485,8 @@ def __h5_unpack(ObjGroup):
     elif ObjGroup.attrs['class'] == 'RecMeasure':
         # PyTTaObj attrs unpacking
         samplingRate = ObjGroup.attrs['samplingRate']
-        freqMin = _h5.none_parser(ObjGroup.attrs['freqMin'])
-        freqMax = _h5.none_parser(ObjGroup.attrs['freqMax'])
+        minFreq = _h5.none_parser(ObjGroup.attrs['minFreq'])
+        maxFreq = _h5.none_parser(ObjGroup.attrs['maxFreq'])
         comment = ObjGroup.attrs['comment']
         lengthDomain = ObjGroup.attrs['lengthDomain']
         fftDegree = ObjGroup.attrs['fftDegree']
@@ -501,8 +501,8 @@ def __h5_unpack(ObjGroup):
                            inChannels=inChannels,
                            blocking=blocking,
                            samplingRate=samplingRate,
-                           freqMin=freqMin,
-                           freqMax=freqMax,
+                           minFreq=minFreq,
+                           maxFreq=maxFreq,
                            comment=comment,
                            lengthDomain=lengthDomain,
                            fftDegree=fftDegree,
@@ -512,8 +512,8 @@ def __h5_unpack(ObjGroup):
     elif ObjGroup.attrs['class'] == 'PlayRecMeasure':
         # PyTTaObj attrs unpacking
         samplingRate = ObjGroup.attrs['samplingRate']
-        freqMin = _h5.none_parser(ObjGroup.attrs['freqMin'])
-        freqMax = _h5.none_parser(ObjGroup.attrs['freqMax'])
+        minFreq = _h5.none_parser(ObjGroup.attrs['minFreq'])
+        maxFreq = _h5.none_parser(ObjGroup.attrs['maxFreq'])
         comment = ObjGroup.attrs['comment']
         lengthDomain = ObjGroup.attrs['lengthDomain']
         fftDegree = ObjGroup.attrs['fftDegree']
@@ -535,16 +535,16 @@ def __h5_unpack(ObjGroup):
                             outChannels=outChannels,
                             blocking=blocking,
                             samplingRate=samplingRate,
-                            freqMin=freqMin,
-                            freqMax=freqMax,
+                            minFreq=minFreq,
+                            maxFreq=maxFreq,
                             comment=comment)
         return prObj
 
     elif ObjGroup.attrs['class'] == 'FRFMeasure':
         # PyTTaObj attrs unpacking
         samplingRate = ObjGroup.attrs['samplingRate']
-        freqMin = _h5.none_parser(ObjGroup.attrs['freqMin'])
-        freqMax = _h5.none_parser(ObjGroup.attrs['freqMax'])
+        minFreq = _h5.none_parser(ObjGroup.attrs['minFreq'])
+        maxFreq = _h5.none_parser(ObjGroup.attrs['maxFreq'])
         comment = ObjGroup.attrs['comment']
         lengthDomain = ObjGroup.attrs['lengthDomain']
         fftDegree = ObjGroup.attrs['fftDegree']
@@ -575,8 +575,8 @@ def __h5_unpack(ObjGroup):
                              outChannels=outChannels,
                              blocking=blocking,
                              samplingRate=samplingRate,
-                             freqMin=freqMin,
-                             freqMax=freqMax,
+                             minFreq=minFreq,
+                             maxFreq=maxFreq,
                              comment=comment)
         return frfObj
 

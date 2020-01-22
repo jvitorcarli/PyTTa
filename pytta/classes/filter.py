@@ -75,8 +75,8 @@ class OctFilter(object):
             signalDict = {'signalArray': filtered,
                           'domain': 'time',
                           'samplingRate': self.samplingRate,
-                          'freqMin': self.minFreq,
-                          'freqMax': self.maxFreq}
+                          'minFreq': self.minFreq,
+                          'maxFreq': self.maxFreq}
             output.append(SignalObj(**signalDict))
         else:
             return output
@@ -113,8 +113,8 @@ class AntiAliasingFilter(object):
             signalDict = {'signalArray': filtered,
                           'domain': 'time',
                           'samplingRate': self.samplingRate,
-                          'freqMin': self.band[0],
-                          'freqMax': self.band[1]}
+                          'minFreq': self.band[0],
+                          'maxFreq': self.band[1]}
             output.append(SignalObj(**signalDict))
         else:
             return output

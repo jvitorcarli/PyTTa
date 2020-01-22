@@ -33,7 +33,7 @@ Generate:
 
 
 # Import modules
-from pytta import default
+from pytta import properties
 from pytta.classes import SignalObj, RecMeasure, FRFMeasure, \
                           PlayRecMeasure, Streaming, OctFilter
 from scipy import signal as ss
@@ -45,7 +45,7 @@ def sin(Arms=0.5,
         freq=1000,
         timeLength=1,
         phase=2*np.pi,
-        samplingRate=default.samplingRate,
+        samplingRate=properties.samplingRate,
         fftDegree=None):
     """
     Generates a sine signal with the traditional parameters plus some PyTTa
@@ -96,13 +96,13 @@ def sin(Arms=0.5,
     t = np.linspace(0, timeLength - (1/samplingRate), samplingRate*timeLength)
     sin = Arms*(2**(1/2)) * np.sin(2*np.pi*freq*t+phase)
     sinSigObj = SignalObj(sin, domain='time', samplingRate=samplingRate,
-                          freqMin=default.freqMin, freqMax=default.freqMax)
+                          minFreq=properties.minFreq, maxFreq=properties.maxFreq)
     sinSigObj.creation_name = creation_name
     return sinSigObj
 
 
-def sweep(freqMin=None,
-          freqMax=None,
+def sweep(minFreq=None,
+          maxFreq=None,
           samplingRate=None,
           fftDegree=None,
           startMargin=None,
@@ -144,22 +144,22 @@ def sweep(freqMin=None,
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
-    if freqMin is None:
-        freqMin = default.freqMin
-    if freqMax is None:
-        freqMax = default.freqMax
+    if minFreq is None:
+        minFreq = properties.minFreq
+    if maxFreq is None:
+        maxFreq = properties.maxFreq
     if samplingRate is None:
-        samplingRate = default.samplingRate
+        samplingRate = properties.samplingRate
     if fftDegree is None:
-        fftDegree = default.fftDegree
+        fftDegree = properties.fftDegree
     if startMargin is None:
-        startMargin = default.startMargin
+        startMargin = properties.startMargin
     if stopMargin is None:
-        stopMargin = default.stopMargin
+        stopMargin = properties.stopMargin
 
     # frequency limits [Hz]
-    freqLimits = {'freqMin': freqMin / (2**(1/6)),
-                  'freqMax': min(freqMax*(2**(1/6)), samplingRate/2)}
+    freqLimits = {'minFreq': minFreq / (2**(1/6)),
+                  'maxFreq': min(maxFreq*(2**(1/6)), samplingRate/2)}
     samplingTime = 1/samplingRate  # [s] sampling period
 
     stopSamples = stopMargin*samplingRate
@@ -185,16 +185,16 @@ def sweep(freqMin=None,
     if timeVecSweep.size > sweepSamples:
         timeVecSweep = timeVecSweep[0:int(sweepSamples)]  # adjust length
     sweep = 0.95*ss.chirp(timeVecSweep,
-                          freqLimits['freqMin'],
+                          freqLimits['minFreq'],
                           sweepTime,
-                          freqLimits['freqMax'],
+                          freqLimits['maxFreq'],
                           'logarithmic',
                           phi=-90)  # sweep, time domain
     sweep = __do_sweep_windowing(sweep,
                                  timeVecSweep,
                                  freqLimits,
-                                 freqMin,
-                                 freqMax,
+                                 minFreq,
+                                 maxFreq,
                                  windowing)  # fade in and fade out
     # add initial and ending sileces
     timeSignal = np.concatenate((np.zeros(int(startSamples)),
@@ -216,8 +216,8 @@ def sweep(freqMin=None,
 def __do_sweep_windowing(inputSweep,
                          timeVecSweep,
                          freqLimits,
-                         freqMin,
-                         freqMax,
+                         minFreq,
+                         maxFreq,
                          window):
     """
     Applies a fade in and fade out that are minimum at the chirp start and end,
@@ -225,27 +225,27 @@ def __do_sweep_windowing(inputSweep,
     """
 
     # frequencies at time instants: freq(t)
-    freqSweep = freqLimits['freqMin']*(
-            (freqLimits['freqMax'] / freqLimits['freqMin'])**(
+    freqSweep = freqLimits['minFreq']*(
+            (freqLimits['maxFreq'] / freqLimits['minFreq'])**(
                     1/max(timeVecSweep))) ** timeVecSweep
 
-    # exact sample where the chirp reaches freqMin [Hz]
-    freqMinSample = np.where(freqSweep <= freqMin)
-    freqMinSample = freqMinSample[-1][-1]
+    # exact sample where the chirp reaches minFreq [Hz]
+    minFreqSample = np.where(freqSweep <= minFreq)
+    minFreqSample = minFreqSample[-1][-1]
 
-    # exact sample where the chirp reaches freqMax [Hz]
-    freqMaxSample = np.where(freqSweep <= freqMax)
-    freqMaxSample = len(freqSweep) - freqMaxSample[-1][-1]
-    windowStart = ss.hanning(2*freqMinSample)
-    windowEnd = ss.hanning(2*freqMaxSample)
+    # exact sample where the chirp reaches maxFreq [Hz]
+    maxFreqSample = np.where(freqSweep <= maxFreq)
+    maxFreqSample = len(freqSweep) - maxFreqSample[-1][-1]
+    windowStart = ss.hanning(2*minFreqSample)
+    windowEnd = ss.hanning(2*maxFreqSample)
 
     # Uses first half of windowStart, last half of windowEnd, and a vector of
     # ones with the remaining length, in between the half windows
-    fullWindow = np.concatenate((windowStart[0:freqMinSample],
+    fullWindow = np.concatenate((windowStart[0:minFreqSample],
                                  np.ones(int(len(freqSweep) -
-                                             freqMinSample -
-                                             freqMaxSample + 1)),
-                                 windowEnd[freqMaxSample:-1]))
+                                             minFreqSample -
+                                             maxFreqSample + 1)),
+                                 windowEnd[maxFreqSample:-1]))
     newSweep = fullWindow * inputSweep
     return newSweep
 
@@ -284,13 +284,13 @@ def noise(kind='white',
     creation_name = extracted_text[3].split("=")[0].strip()
 
     if samplingRate is None:
-        samplingRate = default.samplingRate
+        samplingRate = properties.samplingRate
     if fftDegree is None:
-        fftDegree = default.fftDegree
+        fftDegree = properties.fftDegree
     if startMargin is None:
-        startMargin = default.startMargin
+        startMargin = properties.startMargin
     if stopMargin is None:
-        stopMargin = default.stopMargin
+        stopMargin = properties.stopMargin
 
     # [samples] initial silence number of samples
     stopSamples = round(stopMargin*samplingRate)
@@ -323,7 +323,7 @@ def noise(kind='white',
                                  noiseSignal,
                                  np.zeros(int(stopSamples))))
     noiseSignal = SignalObj(signalArray=noiseSignal, domain='time',
-                            freqMin=default.freqMin, freqMax=default.freqMax,
+                            minFreq=properties.minFreq, maxFreq=properties.maxFreq,
                             samplingRate=samplingRate)
     noiseSignal.creation_name = creation_name
     return noiseSignal
@@ -364,9 +364,9 @@ def impulse(samplingRate=None,
     creation_name = extracted_text[3].split("=")[0].strip()
 
     if samplingRate is None:
-        samplingRate = default.samplingRate
+        samplingRate = properties.samplingRate
     if fftDegree is None:
-        fftDegree = default.fftDegree
+        fftDegree = properties.fftDegree
 
     numSamples = 2**fftDegree
     impulseSignal = (numSamples / samplingRate) \
@@ -382,8 +382,8 @@ def impulse(samplingRate=None,
 
 def measurement(kind='playrec',
                 samplingRate=None,
-                freqMin=None,
-                freqMax=None,
+                minFreq=None,
+                maxFreq=None,
                 device=None,
                 inChannels=None,
                 outChannels=None,
@@ -401,8 +401,8 @@ def measurement(kind='playrec',
                                        excitation,
                                        outputAmplification],
                                        samplingRate,
-                                       freqMin,
-                                       freqMax,
+                                       minFreq,
+                                       maxFreq,
                                        device,
                                        inChannels,
                                        outChannels,
@@ -431,8 +431,8 @@ def measurement(kind='playrec',
                 >>> numSamples = 2**fftDegree
 
         - samplingRate: [Hz] sampling frequency of the recording;
-        - freqMin: [Hz] smallest frequency of interest;
-        - freqMax: [Hz] highest frequency of interest;
+        - minFreq: [Hz] smallest frequency of interest;
+        - maxFreq: [Hz] highest frequency of interest;
         - device: audio I/O device to use for recording;
         - inChannels: list of active channels to record;
         - comment: any commentary about the recording.
@@ -443,8 +443,8 @@ def measurement(kind='playrec',
         - excitation: object of SignalObj class, used for the playback;
         - outputAmplification: output gain in dB;
         - samplingRate: [Hz] sampling frequency of the recording;
-        - freqMin: [Hz] smallest frequency of interest;
-        - freqMax: [Hz] highest frequency of interest;
+        - minFreq: [Hz] smallest frequency of interest;
+        - maxFreq: [Hz] highest frequency of interest;
         - device: audio I/O device to use for recording;
         - inChannels: list of active channels to record;
         - outChannels: list of active channels to send the playback signal, for
@@ -474,23 +474,23 @@ def measurement(kind='playrec',
     creation_name = extracted_text[3].split("=")[0].strip()
 
 # Default Parameters
-    if freqMin is None:
-        freqMin = default.freqMin
-    if freqMax is None:
-        freqMax = default.freqMax
+    if minFreq is None:
+        minFreq = properties.minFreq
+    if maxFreq is None:
+        maxFreq = properties.maxFreq
     if samplingRate is None:
-        samplingRate = default.samplingRate
+        samplingRate = properties.samplingRate
     if device is None:
-        device = default.device
+        device = properties.device
     if inChannels is None:
-        inChannels = default.inChannel[:]
+        inChannels = properties.inChannel[:]
     if outChannels is None:
-        outChannels = default.outChannel[:]
+        outChannels = properties.outChannel[:]
 
 # Kind REC
     if kind in ['rec', 'record', 'recording', 'r']:
-        recordObj = RecMeasure(samplingRate=samplingRate, freqMin=freqMin,
-                               freqMax=freqMax, device=device,
+        recordObj = RecMeasure(samplingRate=samplingRate, minFreq=minFreq,
+                               maxFreq=maxFreq, device=device,
                                inChannels=inChannels, **kwargs)
         if ('lengthDomain' in kwargs) or args:
             if kwargs.get('lengthDomain') == 'time':
@@ -498,16 +498,16 @@ def measurement(kind='playrec',
                 try:
                     recordObj.timeLength = kwargs.get('timeLength')
                 except KeyError:
-                    recordObj.timeLength = default.timeLength
+                    recordObj.timeLength = properties.timeLength
             elif kwargs.get('lengthDomain') == 'samples':
                 recordObj.lengthDomain = 'samples'
                 try:
                     recordObj.fftDegree = kwargs.get('fftDegree')
                 except KeyError:
-                    recordObj.fftDegree = default.fftDegree
+                    recordObj.fftDegree = properties.fftDegree
         else:
             recordObj.lengthDomain = 'samples'
-            recordObj.fftDegree = default.fftDegree
+            recordObj.fftDegree = properties.fftDegree
         recordObj.creation_name = creation_name
         return recordObj
 
@@ -523,8 +523,8 @@ def measurement(kind='playrec',
             kwargs.pop('excitation', None)
         else:
             signalIn = sweep(samplingRate=samplingRate,
-                             freqMin=freqMin,
-                             freqMax=freqMax,
+                             minFreq=minFreq,
+                             maxFreq=maxFreq,
                              **kwargs)
 
         playRecObj = PlayRecMeasure(excitation=signalIn,
@@ -532,8 +532,8 @@ def measurement(kind='playrec',
                                     device=device,
                                     inChannels=inChannels,
                                     outChannels=outChannels,
-                                    freqMin=freqMin,
-                                    freqMax=freqMax, **kwargs)
+                                    minFreq=minFreq,
+                                    maxFreq=maxFreq, **kwargs)
         playRecObj.creation_name = creation_name
         return playRecObj
 
@@ -554,8 +554,8 @@ def measurement(kind='playrec',
             kwargs.pop('excitation', None)
         else:
             signalIn = sweep(samplingRate=samplingRate,
-                             freqMin=freqMin,
-                             freqMax=freqMax,
+                             minFreq=minFreq,
+                             maxFreq=maxFreq,
                              **kwargs)
 
         frfObj = FRFMeasure(excitation=signalIn,
@@ -563,8 +563,8 @@ def measurement(kind='playrec',
                             device=device,
                             inChannels=inChannels,
                             outChannels=outChannels,
-                            freqMin=freqMin,
-                            freqMax=freqMax,
+                            minFreq=minFreq,
+                            maxFreq=maxFreq,
                             regularization=regularization,
                             **kwargs)
         frfObj.creation_name = creation_name
@@ -600,11 +600,11 @@ def stream(IO='IO',
     creation_name = extracted_text[3].split("=")[0].strip()
 
     if device is None:
-        device = default.device
+        device = properties.device
     if integration is None:
-        integration = default.integration
+        integration = properties.integration
     if inChannels is None:
-        inChannels = default.inChannel[:]
+        inChannels = properties.inChannel[:]
     if isinstance(excitation, SignalObj):
         excit = True
         excitData = excitation.timeSignal[:]
@@ -614,7 +614,7 @@ def stream(IO='IO',
     else:
         excit = False
         if samplingRate is None:
-            samplingRate = default.samplingRate
+            samplingRate = properties.samplingRate
 
     if IO in ['I', 'in', 'input']:
         stream = Streaming(device=device, integration=integration,

@@ -439,7 +439,7 @@ class Recorder(Streaming):
         arr = self.recData.reshape((self.numSamples, self.numInChannels))
         assert arr.ndim == 2
         signal = SignalObj(arr, 'time', self.samplingRate,
-                           freqMin=20, freqMax=20e3)
+                           minFreq=20, maxFreq=20e3)
         return signal
 
     def run(self):
@@ -523,7 +523,7 @@ class PlaybackRecorder(Streaming):
         arr = self.recData.reshape((self.numSamples, self.numInChannels))
         assert arr.ndim == 2
         signal = SignalObj(arr, 'time', self.samplingRate,
-                           freqMin=20, freqMax=20e3)
+                           minFreq=20, maxFreq=20e3)
         return signal
 
     def run(self):

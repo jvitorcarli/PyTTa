@@ -10,7 +10,7 @@ import scipy.io as sio
 import sounddevice as sd
 import time
 from warnings import warn  # , filterwarnings
-from pytta import default
+from pytta import properties
 from pytta.classes import _base
 from pytta import h5utilities as _h5
 from pytta.frequtils import fractional_octave_frequencies as FOF
@@ -34,10 +34,10 @@ class SignalObj(_base.PyTTaObj):
         * samplingRate (44100), (int):
             signal's sampling rate;
 
-        * freqMin (20), (int):
+        * minFreq (20), (int):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (int):
+        * maxFreq (20000), (int):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -98,7 +98,7 @@ class SignalObj(_base.PyTTaObj):
 
         * plot_freq():
             generates the signal's spectre graphic;
-        
+
         * plot_spectrogram():
             generates the signal's spectrogram graphic;
 
@@ -148,10 +148,10 @@ class SignalObj(_base.PyTTaObj):
             self.lengthDomain = 'time'
             print('Taking the input as a time domain signal.')
 
-        if self.freqMin is None:
-            self.freqMin = default.freqMin
-        if self.freqMax is None:
-            self.freqMax = default.freqMax
+        if self.minFreq is None:
+            self.minFreq = properties.minFreq
+        if self.maxFreq is None:
+            self.maxFreq = properties.maxFreq
 
         return
 
@@ -186,7 +186,7 @@ class SignalObj(_base.PyTTaObj):
             self._timeLength = self.numSamples/self.samplingRate
             # [s] time vector (x axis)
             self._timeVector = np.linspace(0,
-                                           self.timeLength 
+                                           self.timeLength
                                            - 1/self.samplingRate,
                                            self.numSamples)
             # [Hz] frequency vector (x axis)
@@ -221,7 +221,7 @@ class SignalObj(_base.PyTTaObj):
             self._timeLength = self.numSamples/self.samplingRate
             # [s] time vector (x axis)
             self._timeVector = np.linspace(0,
-                                           self.timeLength 
+                                           self.timeLength
                                            - 1/self.samplingRate,
                                            self.numSamples)
             self._freqVector = np.linspace(0, (self.numSamples-1) *
@@ -308,7 +308,7 @@ class SignalObj(_base.PyTTaObj):
         """
         if outChannels is None:
             if self.numChannels <= 1:
-                outChannels = default.outChannel
+                outChannels = properties.outChannel
             elif self.numChannels > 1:
                 outChannels = np.arange(1, self.numChannels+1)
         sd.play(self.timeSignal, self.samplingRate,
@@ -343,7 +343,7 @@ class SignalObj(_base.PyTTaObj):
         if xlim is None:
             xlim = (self.timeVector[0], self.timeVector[-1])
         ax.set_xlim(xlim)
-        
+
         xticks = np.linspace(*xlim, 11).tolist()
         ax.set_xticks(xticks)
         ax.set_xticklabels(['{:.2n}'.format(tick) for tick in xticks],
@@ -354,10 +354,10 @@ class SignalObj(_base.PyTTaObj):
         # limData = [value for value in limData.flatten() if not np.isinf(value)]
         limData[np.isinf(limData)] = 0
         margin = (np.nanmax(limData) - np.nanmin(limData)) / 20
-    
+
         ylimInf = np.nanmin(limData)
         ylimInf -= margin
-        
+
         ylimSup = np.nanmax(limData)
         ylimSup += margin
 
@@ -438,10 +438,10 @@ class SignalObj(_base.PyTTaObj):
                               (np.array(self.channels.dBRefList())**2))
         limData = [value for value in limData.flatten() if not np.isinf(value)]
         margin = (np.nanmax(limData) - np.nanmin(limData)) / 20
-    
+
         ylimInf = np.nanmin(limData)
         ylimInf -= margin
-        
+
         ylimSup = np.nanmax(limData)
         ylimSup += margin
 
@@ -490,32 +490,32 @@ class SignalObj(_base.PyTTaObj):
         ax.grid(color='gray', linestyle='-.', linewidth=0.4)
 
         if xlim is None:
-            xlim = (self.freqMin, self.freqMax)
+            xlim = (self.minFreq, self.maxFreq)
 
         ax.set_xlim(xlim)
-        
+
         xticks = FOF(minFreq=xlim[0], maxFreq=xlim[1], nthOct=3)[:, 1].tolist()
         ax.set_xticks(xticks)
         ax.set_xticklabels(['{:n}'.format(tick) for tick in xticks],
                            rotation=45, fontsize=14)
         ax.set_xlabel(xlabel, fontsize=20)
-        
-        freqMinIdx = np.where(self.freqVector > self.freqMin)[0][0]
-        freqMaxIdx = np.where(self.freqVector < self.freqMax)[0][-1]
+
+        minFreqIdx = np.where(self.freqVector > self.minFreq)[0][0]
+        maxFreqIdx = np.where(self.freqVector < self.maxFreq)[0][-1]
 
         limData = \
-            20*np.log10(np.abs(self.freqSignal[freqMinIdx:freqMaxIdx, :]) /
+            20*np.log10(np.abs(self.freqSignal[minFreqIdx:maxFreqIdx, :]) /
                         self.channels.dBRefList())
 
         limData = [value for value in limData.flatten() if not np.isinf(value)]
         margin = (np.nanmax(limData) - np.nanmin(limData)) / 20
-    
+
         ylimInf = np.nanmin(limData)
         ylimInf -= margin
-        
+
         ylimSup = np.nanmax(limData)
         ylimSup += margin
-        
+
         if ylim is None:
             ylim = (ylimInf, ylimSup)
         ax.set_ylim(ylim)
@@ -531,8 +531,8 @@ class SignalObj(_base.PyTTaObj):
     def plot_spectrogram(self, window='hann', winSize=1024, overlap=0.5,
                          xlabel=None, ylabel=None):
         """plot_spectrogram plots the spectrum time history
-        
-        :param window: window type for the time slicing, defaults to 'hann'
+
+        :param window: window type for the time slicing, propertiess to 'hann'
         :type window: str, optional
         :param winSize: window size in samples, defaults to 1024
         :type winSize: int, optional
@@ -574,7 +574,7 @@ class SignalObj(_base.PyTTaObj):
                            fontsize=14)
         ax.set_xlabel(xlabel, fontsize=20)
 
-        ylim = (self.freqMin, self.freqMax)
+        ylim = (self.minFreq, self.maxFreq)
         ax.set_ylim(ylim)
         yticks = np.linspace(ylim[0], ylim[1], 11).tolist()
         ax.set_yticks(yticks)
@@ -706,7 +706,7 @@ class SignalObj(_base.PyTTaObj):
                 raise TypeError("Both SignalObj must have the same sampling rate.")
             result = SignalObj(np.zeros(self.timeSignal.shape),
                             samplingRate=self.samplingRate,
-                            freqMin=self.freqMin, freqMax=self.freqMax)
+                            minFreq=self.minFreq, maxFreq=self.maxFreq)
             result.channels = self.channels
             if self.numChannels > 1:
                 if other.numChannels > 1:
@@ -753,7 +753,7 @@ class SignalObj(_base.PyTTaObj):
                 raise TypeError("Both SignalObj must have the same sampling rate.")
             result = SignalObj(np.zeros(self.timeSignal.shape),
                             samplingRate=self.samplingRate,
-                            freqMin=self.freqMin, freqMax=self.freqMax)
+                            minFreq=self.minFreq, maxFreq=self.maxFreq)
             result.channels = self.channels
             if self.numChannels > 1:
                 if other.numChannels > 1:
@@ -819,7 +819,7 @@ class SignalObj(_base.PyTTaObj):
             raise TypeError("A SignalObj can only operate with other alike, " +
                             "int, or float.")
 
-        result.freqMin, result.freqMax = (self.freqMin, self.freqMax)
+        result.minFreq, result.maxFreq = (self.minFreq, self.maxFreq)
         result._channels = self.channels
         return result
 
@@ -853,8 +853,8 @@ class SignalObj(_base.PyTTaObj):
         return (f'{self.__class__.__name__}('
                 f'SignalArray=ndarray, domain={self.lengthDomain!r}, '
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r})')
 
     def __getitem__(self, key):
@@ -1015,7 +1015,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                 raise ValueError("You may create an ImpulsiveResponse " +
                                  "passing as parameter the 'excitation' " +
                                  "and 'recording' signals, or a calculated " +
-                                 "'ir'.")   
+                                 "'ir'.")
             self._methodInfo = {'method': method, 'winType': winType,
                                 'winSize': winSize, 'overlap': overlap}
             self._systemSignal = self._calculate_tf_ir(excitation,
@@ -1124,8 +1124,8 @@ class ImpulsiveResponse(_base.PyTTaObj):
                 freqVector = inputSignal.freqVector
                 b = data * 0 + 10**(-200/20) # inside signal freq range
                 a = data * 0 + 1 # outinside signal freq range
-                minFreq = np.max([inputSignal.freqMin, outputSignal.freqMin])
-                maxFreq = np.min([inputSignal.freqMax, outputSignal.freqMax])
+                minFreq = np.max([inputSignal.minFreq, outputSignal.minFreq])
+                maxFreq = np.min([inputSignal.maxFreq, outputSignal.maxFreq])
                 # Calculate epsilon
                 eps = self._crossfade_spectruns(a, b,
                                                [minFreq/np.sqrt(2),
@@ -1287,8 +1287,8 @@ class ImpulsiveResponse(_base.PyTTaObj):
                 result.freqSignal = (YY - XX +
                                      np.sqrt((XX-YY)**2 +
                                              4*np.abs(XY)**2)) / 2*YX
-        result.freqMin = outputSignal.freqMin
-        result.freqMax = outputSignal.freqMax
+        result.minFreq = outputSignal.minFreq
+        result.maxFreq = outputSignal.maxFreq
         result.channels = outputSignal.channels / inputSignal.channels
         return result    # end of function get_transferfunction()
 
@@ -1313,11 +1313,11 @@ class ImpulsiveResponse(_base.PyTTaObj):
 
         aFreqSignal = np.zeros(a.shape, dtype=np.complex_)
         bFreqSignal = np.zeros(b.shape, dtype=np.complex_)
-        
+
         for chIndex in range(a.shape[1]):
             aFreqSignal[:,chIndex] = a[:,chIndex] * fullRightWin
             bFreqSignal[:,chIndex] = b[:,chIndex] * fullLeftWin
-        
+
         a = aFreqSignal
         b = bFreqSignal
 

@@ -43,7 +43,9 @@ documentation.
 
 # Importing .py files as submodules
 from . import frequtils
-from .properties import default
+from .properties import Properties
+
+properties = Properties()
 
 # Instantiate the Default parameters to be loaded by other
 # methods and function calls
@@ -104,3 +106,4 @@ __all__ = [  # Apps
 
            # Objects
            'default']
+

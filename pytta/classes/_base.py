@@ -41,10 +41,10 @@ class PyTTaObj(RICI):
         * numSamples (samples), (int):
             signal's number of samples
 
-        * freqMin (20), (int):
+        * minFreq (20), (int):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (int):
+        * maxFreq (20000), (int):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -53,8 +53,8 @@ class PyTTaObj(RICI):
 
     def __init__(self,
                  samplingRate=None,
-                 freqMin=None,
-                 freqMax=None,
+                 minFreq=None,
+                 maxFreq=None,
                  comment="No comments.",
                  lengthDomain=None,
                  fftDegree=None,
@@ -62,8 +62,8 @@ class PyTTaObj(RICI):
                  numSamples=None):
         super().__init__()
         self._samplingRate = samplingRate
-        self._freqMin = freqMin
-        self._freqMax = freqMax
+        self._minFreq = minFreq
+        self._maxFreq = maxFreq
         self._comment = comment
         self._lengthDomain = lengthDomain
         self._fftDegree = fftDegree
@@ -74,8 +74,8 @@ class PyTTaObj(RICI):
         return (f'{self.__class__.__name__}('
                 # PyTTaObj properties
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r}), '
                 f'lengthDomain={self.lengthDomain!r}, '
                 f'fftDegree={self.fftDegree!r}, '
@@ -128,21 +128,21 @@ class PyTTaObj(RICI):
         return
 
     @property
-    def freqMin(self):
-        return self._freqMin
+    def minFreq(self):
+        return self._minFreq
 
-    @freqMin.setter
-    def freqMin(self, newFreqMin):
-        self._freqMin = round(newFreqMin/(2**(1/6)), 2)
+    @minFreq.setter
+    def minFreq(self, newminFreq):
+        self._minFreq = round(newminFreq/(2**(1/6)), 2)
         return
 
     @property
-    def freqMax(self):
-        return self._freqMax
+    def maxFreq(self):
+        return self._maxFreq
 
-    @freqMax.setter
-    def freqMax(self, newFreqMax):
-        self._freqMax = round(np.min((newFreqMax*(2**(1/6)),
+    @maxFreq.setter
+    def maxFreq(self, newmaxFreq):
+        self._maxFreq = round(np.min((newmaxFreq*(2**(1/6)),
                                       self.samplingRate//2)), 2)
         return
 
@@ -166,7 +166,7 @@ class PyTTaObj(RICI):
 
     def _to_dict(self):
         out = {'samplingRate': self.samplingRate,
-               'freqLims': [self.freqMin, self.freqMax],
+               'freqLims': [self.minFreq, self.maxFreq],
                'fftDegree': self.fftDegree,
                'lengthDomain': self.lengthDomain,
                'comment': self.comment}
@@ -189,8 +189,8 @@ class PyTTaObj(RICI):
 
     def h5_save(self, h5group):
         h5group.attrs['samplingRate'] = self.samplingRate
-        h5group.attrs['freqMin'] = _h5.none_parser(self.freqMin)
-        h5group.attrs['freqMax'] = _h5.none_parser(self.freqMax)
+        h5group.attrs['minFreq'] = _h5.none_parser(self.minFreq)
+        h5group.attrs['maxFreq'] = _h5.none_parser(self.maxFreq)
         h5group.attrs['comment'] = self.comment
         h5group.attrs['lengthDomain'] = _h5.none_parser(self.lengthDomain)
         h5group.attrs['fftDegree'] = self.fftDegree
@@ -697,7 +697,7 @@ class ChannelsList(object):
                 if len(self) != len(otherList):
                     raise ValueError("Both ChannelsList-like objects must \
                                      have the same number of channels.")
-                
+
                 newChList = ChannelsList([self[self.mapping[idx]]/
                                           otherList[otherList.mapping[idx]]
                                           for idx in range(len(self))])

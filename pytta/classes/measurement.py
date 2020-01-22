@@ -49,10 +49,10 @@ class Measurement(_base.PyTTaObj):
         * numSamples (samples), (int):
             signal's number of samples
 
-        * freqMin (20), (int):
+        * minFreq (20), (int):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (int):
+        * maxFreq (20000), (int):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -83,8 +83,8 @@ class Measurement(_base.PyTTaObj):
                 f'blocking={self.blocking!r}, '
                 # PyTTaObj properties
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r}), '
                 f'lengthDomain={self.lengthDomain!r}, '
                 f'fftDegree={self.fftDegree!r}, '
@@ -156,8 +156,8 @@ class Measurement(_base.PyTTaObj):
                                   samplingRate=self.samplingRate,
                                   inChannels=chIndex,
                                   device=self.device,
-                                  freqMin=self.freqMin,
-                                  freqMax=self.freqMax).run()
+                                  minFreq=self.minFreq,
+                                  maxFreq=self.maxFreq).run()
         if chIndex-1 in range(len(self.inChannels)):
             self.inChannels[chIndex-1].calib_press(refSignalObj,
                                                    refPrms, refFreq)
@@ -197,10 +197,10 @@ class RecMeasure(Measurement):
         * numSamples (samples), (int):
             signal's number of samples
 
-        * freqMin (20), (float):
+        * minFreq (20), (float):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (float):
+        * maxFreq (20000), (float):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -243,8 +243,8 @@ class RecMeasure(Measurement):
                 f'blocking={self.blocking!r}, '
                 # PyTTaObj properties
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r})')
 
     def _to_dict(self):
@@ -337,8 +337,8 @@ class RecMeasure(Measurement):
                               samplingRate=self.samplingRate)
         recording.channels = self.inChannels
         recording.timeStamp = time.ctime(time.time())
-        recording.freqMin, recording.freqMax\
-            = self.freqMin, self.freqMax
+        recording.minFreq, recording.maxFreq\
+            = self.minFreq, self.maxFreq
         recording.comment = 'SignalObj from a Rec measurement'
         recording.creation_name = creation_name
         _print_max_level(recording, kind='input')
@@ -385,10 +385,10 @@ class PlayRecMeasure(Measurement):
         * numSamples (samples), (int):
             signal's number of samples
 
-        * freqMin (20), (int):
+        * minFreq (20), (int):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (int):
+        * maxFreq (20000), (int):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -406,14 +406,14 @@ class PlayRecMeasure(Measurement):
             super().__init__(*args, **kwargs)
         else:
             self.excitation = excitation
-            if 'freqMin' in kwargs:
-                kwargs.pop('freqMin')
-            if 'freqMax' in kwargs:
-                kwargs.pop('freqMax')
+            if 'minFreq' in kwargs:
+                kwargs.pop('minFreq')
+            if 'maxFreq' in kwargs:
+                kwargs.pop('maxFreq')
             super().__init__(*args,
                              samplingRate=excitation.samplingRate,
-                             freqMin=excitation.freqMin,
-                             freqMax=excitation.freqMax,
+                             minFreq=excitation.minFreq,
+                             maxFreq=excitation.maxFreq,
                              fftDegree=excitation.fftDegree,
                              timeLength=excitation.timeLength,
                              lengthDomain=excitation.lengthDomain,
@@ -435,8 +435,8 @@ class PlayRecMeasure(Measurement):
                 f'blocking={self.blocking!r}, '
                 # PyTTaObj properties
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r})')
 
 # PlayRec Methods
@@ -475,8 +475,8 @@ class PlayRecMeasure(Measurement):
         recording = SignalObj(signalArray=recording*self.inChannels.CFlist(),
                               domain='time',
                               samplingRate=self.samplingRate,
-                              freqMin=self.freqMin,
-                              freqMax=self.freqMax)
+                              minFreq=self.minFreq,
+                              maxFreq=self.maxFreq)
         recording.channels = self.inChannels
         recording.timeStamp = timeStamp
         recording.comment = 'SignalObj from a PlayRec measurement'
@@ -559,12 +559,12 @@ class PlayRecMeasure(Measurement):
 #        return self.excitation._numSamples
 #
 #    @property
-#    def freqMin(self):
-#        return self.excitation._freqMin
+#    def minFreq(self):
+#        return self.excitation._minFreq
 #
 #    @property
-#    def freqMax(self):
-#        return self.excitation._freqMax
+#    def maxFreq(self):
+#        return self.excitation._maxFreq
 
 
 # FRFMeasure class
@@ -604,10 +604,10 @@ class FRFMeasure(PlayRecMeasure):
         * numSamples (samples), (int):
             signal's number of samples
 
-        * freqMin (20), (int):
+        * minFreq (20), (int):
             minimum frequency bandwidth limit;
 
-        * freqMax (20000), (int):
+        * maxFreq (20000), (int):
             maximum frequency bandwidth limit;
 
         * comment ('No comments.'), (str):
@@ -655,8 +655,8 @@ class FRFMeasure(PlayRecMeasure):
                 f'blocking={self.blocking!r}, '
                 # PyTTaObj properties
                 f'samplingRate={self.samplingRate!r}, '
-                f'freqMin={self.freqMin!r}, '
-                f'freqMax={self.freqMax!r}, '
+                f'minFreq={self.minFreq!r}, '
+                f'maxFreq={self.maxFreq!r}, '
                 f'comment={self.comment!r})')
 
     def pytta_save(self, dirname=time.ctime(time.time())):
