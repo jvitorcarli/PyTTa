@@ -2,7 +2,7 @@ Contributing
 ============
 If you want to contribute to this project and make it better, your help is very welcome.
 
-### How to make a clean pull request
+## How to make a clean pull request
 
 - Create a personal fork of the project on Github.
 - Clone the fork on your local machine. Your remote repo on Github is called `origin`.
@@ -22,5 +22,16 @@ your extra branch(es).
 
 And last but not least: Always write your commit messages in the present tense. Your commit message should describe what the commit when applied, does to the code – not what you did to the code.
 
-
 Adapted from [MarcDiethelm](https://github.com/MarcDiethelm/contributing)
+
+## Installing PyTTa locally for development
+
+PyTTa currently uses [Poetry](https://python-poetry.org/), a pip alternative, to manage its regular and development dependencies. You can get it at: [https://python-poetry.org/docs/#installation](https://python-poetry.org/docs/#installation)
+
+After getting Poetry and cloning your forked repository to your machine install the regular and development dependencies, as follows:
+
+```bash
+$ poetry install
+```
+
+Have fun developing!
