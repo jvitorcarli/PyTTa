@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "pytta"
+version = "0.1.1"
+description = "Signal processing tools for acoustics and vibrations in python, development package."
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.7 < 3.9"
+h5py = "^3.2.1"
+matplotlib = "^3.4.1"
+numba = "^0.53.1"
+numpy = "^1.20.2"
+scipy = "^1.6.3"
+sounddevice = "^0.4.1"
+SoundFile = "^0.10.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
