@@ -150,3 +150,7 @@ dmypy.json
 
 # asdf version manager
 .tool-versions
+
+# Poetry python package manager
+# lockfile
+poetry.lock
