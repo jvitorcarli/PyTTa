@@ -1,9 +1,12 @@
 [tool.poetry]
-name = "pytta"
+name = "PyTTa"
 version = "0.1.1"
 description = "Signal processing tools for acoustics and vibrations in python, development package."
 authors = ["Your Name <you@example.com>"]
 license = "MIT"
+readme = "README.md"
+repository = "http://github.com/PyTTAmaster/PyTTa"
+documentation = "https://pytta.readthedocs.io/index.html"
 
 [tool.poetry.dependencies]
 python = ">=3.7 < 3.9"
